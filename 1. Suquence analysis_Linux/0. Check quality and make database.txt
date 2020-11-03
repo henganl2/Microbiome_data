@@ -1,0 +1,18 @@
+#Download and create database (RDP, Unite 8.0 and 8.2)
+
+mkdir Unite
+wget https://files.plutof.ut.ee/doi/06/A2/06A2C86256EED64085670EB0C54B7115F6DAC8F311C656A9CB33E386CFABA0D0.zip   ##Unite 8.0 (Includes global and 97% singletons.)
+wget https://files.plutof.ut.ee/public/orig/1E/66/1E662B6EB320312A61E7E3218327F34C7DB09CFF8E4686A89EF47886822DA6AB.gz   ##Unite 8.2 (Includes global and 97% singletons.)
+
+unzip 06A2C86256EED64085670EB0C54B7115F6DAC8F311C656A9CB33E386CFABA0D0.zip
+gunzip 1E662B6EB320312A61E7E3218327F34C7DB09CFF8E4686A89EF47886822DA6AB.gz 
+
+##Check the sequence length distribution in the United database (the code can get the length of each sequence)
+awk '/^>/ {if (seqlen) print seqlen;print;seqlen=0;next} {seqlen+=length($0)}END{print seqlen}' sh_general_release_dynamic_02.02.2019.fasta > database.sequencelength.txt
+
+
+##Make a customized database  
+module avail BLAST 
+module load BLAST+/2.9.0-IGB-gcc-4.9.4
+makeblastdb -help
+makeblastdb -in sh_general_release_dynamic_02.02.2019.fasta -dbtype nucl -out UniteBlast

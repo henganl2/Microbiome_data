@@ -1,0 +1,34 @@
+## relable the sampleID in each file 
+
+sed 's/sampleid=Mideros_1/sample=BC0X/g' BC0X.q.n.fasta
+
+awk '{if (/^>/) print ">"$3; else print $0;}' All.fasta >All2.fasta
+
+
+## pre cluster at id 95%
+
+vsearch --usersort --cluster_smallmem BC01.q.n.id.fasta --sizein -sizeout --fasta_width 0 --iddef 0 --id 0.95 --minsl 0.9 --consout ../pre_OTU/BC01.q.n.preOTU.fasta 
+sed 's/centroid=//g' BC01.q.n.fasta
+
+
+## merge all the percluster fasta file
+cat *.fasta > all.preOTU.fasta
+
+
+## Cluster at id 92%
+vsearch --cluster_size test.fasta --relabel OTU --sizein --sizeout --fasta_width 0 --iddef 0 --id 0.92 --minsl 0.9 --consout ../OTU/test.q.n.OTU.ID92.fasta --otutabout ../OTU/test.q.n.ID92.otutab.txt
+
+
+
+## Check number of OTUs: 
+grep -c "^>" all.otus.fasta
+
+
+## Remove singletons (if there is only 1 across all 96 samples)
+awk 'FNR == 1{print;next}{for(i=2;i<=NF;i++) if($i > 1){print;next}}' inputfile >outputfile
+
+## Remove singletons and doubletons (if there is only 2 across all 96 samples)
+awk 'FNR == 1{print;next}{for(i=2;i<=NF;i++) if($i > 2){print;next}}' inputfile >outputfile
+
+https://github.com/torognes/vsearch/wiki/VSEARCH-pipeline
+https://manpages.debian.org/stretch/vsearch/vsearch.1

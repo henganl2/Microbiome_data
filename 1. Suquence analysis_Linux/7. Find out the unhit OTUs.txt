@@ -1,0 +1,23 @@
+#!/bin/bash
+# ----------------SLURM Parameters----------------
+#SBATCH -p normal
+#SBATCH -n 1
+#SBATCH --mem=1g
+#SBATCH -N 1
+#SBATCH --array=1-9%1
+#SBATCH -D /home/a-m/henganl2/phyloseq_input/featuretable_ITS
+#SBATCH --mail-user henganl2@illinois.edu
+#SBATCH --mail-type BEGIN,END,FAIL
+# ----------------Commands------------------------
+sed '1d' BC0${SLURM_ARRAY_TASK_ID}.featuretable.ID88.txt >feature.txt 
+sed '1d' BC0${SLURM_ARRAY_TASK_ID}.frequencytable.txt >frequency.txt 
+awk '{print $1}' feature.txt  >feature.txt
+awk '{print $1}' frequency.txt  >frequency.txt
+grep -v -x -f feature.txt frequency.txt >test.txt
+awk  -F"\t" '{print$0, " ", "unidentified",$2,"unidentified",$3,"unidentified",$4,"unidentified",$5,"unidentified",$6,"unidentified",$7,"unidentified",$8}' test.txt> test1.txt
+cat feature.txt test.txt >test1.txt
+awk -F'\t' 'BEGIN{print " " "Domain","Phylum","Class","Order","Family","Genus","Species"}; {print}' BC0${SLURM_ARRAY_TASK_ID}.temp9.txt >../phyloseq_input_2/BC0${SLURM_ARRAY_TASK_ID}.featuretable_2.ID88.txt
+rm feature.txt 
+rm frequency.txt 
+rm test.txt
+rm test1.txt 

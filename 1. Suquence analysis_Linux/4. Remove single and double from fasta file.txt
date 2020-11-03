@@ -1,0 +1,10 @@
+awk '{gsub("centroid=","")}1' all.q.n.OTU.ID92.fasta >test.ID92.fasta
+sed 's/;.*;//g' test.ID92.fasta >test2.ID92.fasta
+
+
+awk '{print $1}' all.q.n.ID92.otutab.removedouble.txt>frequency.txt
+sed '1d' frequency.txt >frequency2.txt
+
+seqtk subseq test2.ID92.fasta frequency2.txt > out.fasta
+
+

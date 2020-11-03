@@ -1,0 +1,340 @@
+Data All_V4;
+input Plot_ID$ Seed$ Block$ Treat$ Treat_I$ Stage$ Sample_ID$ Rich LogRich Chao1 ACE Shannon Simpson;
+cards;
+18QM1011 LD13-14071R2 1 Inoc/no Inoc V4-R1 BC01 84 1.92 129.0909 121.107 2.228642 0.8300105
+18QM1033 Williams 1 not_inoc/yes not_inoc V4-R1 BC02 195 2.29 240.9333 243.193 2.303109 0.8433104
+18QM2022 LD12-8677 2 Inoc/no Inoc V4-R1 BC03 209 2.32 288.0263 294.7976 2.748081 0.8981488
+18QM3011 LD12-8677 3 Inoc/yes Inoc V4-R1 BC04 235 2.37 310 313.4053 2.706846 0.877009
+18QM3033 LD12-8677 3 Inoc/no Inoc V4-R1 BC05 186 2.27 236.8333 239.3272 2.860511 0.9019137
+18QM1012 Williams 1 Inoc/no Inoc V4-R1 BC13 223 2.35 306.3191 336.3138 2.434834 0.8498198
+18QM1041 LD13-14071R2 1 not_inoc/no not_inoc V4-R1 BC14 214 2.33 389.7778 428.7844 2.537134 0.8665975
+18QM2023 Williams 2 Inoc/no Inoc V4-R1 BC15 477 2.68 635.1818 607.2956 2.50669 0.8600474
+18QM3012 LD13-14071R2 3 Inoc/yes Inoc V4-R1 BC16 303 2.48 540.3171 500.345 2.881387 0.8973292
+18QM3041 Williams 3 not_inoc/no not_inoc V4-R1 BC17 350 2.54 551.9048 578.9749 2.436225 0.8425967
+18QM1013 LD12-8677 1 Inoc/no Inoc V4-R1 BC25 149 2.17 277.619 295.8826 2.282925 0.8256727
+18QM1042 Williams 1 not_inoc/no not_inoc V4-R1 BC26 312 2.49 579.75 583.9852 2.349535 0.8581175
+18QM2031 LD13-14071R2 2 not_inoc/no not_inoc V4-R1 BC27 233 2.37 407 430.1008 2.710854 0.887381
+18QM3013 Williams 3 Inoc/yes Inoc V4-R1 BC28 401 2.60 570.0299 571.57 2.697428 0.8696828
+18QM3042 LD13-14071R2 3 not_inoc/no not_inoc V4-R1 BC29 185 2.27 297.5882 323.9833 2.693918 0.8897123
+18QM1021 LD12-8677 1 Inoc/yes Inoc V4-R1 BC37 543 2.73 886.5 829.1049 2.284445 0.8409551
+18QM1043 LD12-8677 1 not_inoc/no not_inoc V4-R1 BC38 185 2.27 338.12 348.0489 2.384463 0.8469385
+18QM2032 LD12-8677 2 not_inoc/no not_inoc V4-R1 BC39 115 2.06 221.1053 226.4184 2.565889 0.887486
+18QM3021 Williams 3 not_inoc/yes not_inoc V4-R1 BC40 381 2.58 748.5968 823.5234 2.613964 0.868897
+18QM3043 LD12-8677 3 not_inoc/no not_inoc V4-R1 BC41 272 2.43 528.0526 481.4259 2.989264 0.9052504
+18QM1022 LD13-14071R2 1 Inoc/yes Inoc V4-R1 BC49 165 2.22 359 383.0515 2.446593 0.8734309
+18QM2011 LD13-14071R2 2 Inoc/yes Inoc V4-R1 BC50 283 2.45 549.0714 596.9168 2.664314 0.8849239
+18QM2033 Williams 2 not_inoc/no not_inoc V4-R1 BC51 221 2.34 340.0222 393.9164 2.293296 0.8458783
+18QM3022 LD13-14071R2 3 not_inoc/yes not_inoc V4-R1 BC52 405 2.61 762.8814 747.0963 2.622642 0.8726297
+18QM1023 Williams 1 Inoc/yes Inoc V4-R1 BC61 634 2.80 1074.6111 1141.3572 2.419707 0.8172178
+18QM2012 LD12-8677 2 Inoc/yes Inoc V4-R1 BC62 165 2.22 315.6154 353.0502 2.80572 0.9078383
+18QM2041 LD13-14071R2 2 not_inoc/yes not_inoc V4-R1 BC63 239 2.38 538.0909 540.106 2.761118 0.8945165
+18QM3023 LD12-8677 3 not_inoc/yes not_inoc V4-R1 BC64 448 2.65 613 620.3137 2.773411 0.8704005
+18QM1031 LD13-14071R2 1 not_inoc/yes not_inoc V4-R1 BC73 347 2.54 792.7381 718.4708 2.485975 0.8597863
+18QM2013 Williams 2 Inoc/yes Inoc V4-R1 BC74 453 2.66 659.3793 700.9463 2.428549 0.8593793
+18QM2042 Williams 2 not_inoc/yes not_inoc V4-R1 BC75 381 2.58 642.9429 725.1791 2.417589 0.8512985
+18QM3031 Williams 3 Inoc/no Inoc V4-R1 BC76 572 2.76 1206.48 1159.0542 2.42538 0.8397563
+18QM1032 LD12-8677 1 not_inoc/yes not_inoc V4-R1 BC85 235 2.37 600.5556 546.0656 2.632821 0.8835991
+18QM2021 LD13-14071R2 2 Inoc/no Inoc V4-R1 BC86 311 2.49 646.625 708.0289 2.808709 0.8984568
+18QM2043 LD12-8677 2 not_inoc/yes not_inoc V4-R1 BC87 297 2.47 558.6875 595.8468 2.738783 0.8963201
+18QM3032 LD13-14071R2 3 Inoc/no Inoc V4-R1 BC88 386 2.59 780.8333 799.4836 2.664209 0.88254
+;;;
+proc glm data= All_V4 plots=All; class Block Treat_I;
+model LogRich =Treat_I;
+/*HOV test*/
+means Treat_I / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+
+proc glm data= All_V4 plots=All; class Block Treat_I;
+model Shannon =Treat_I;
+/*HOV test*/
+means Treat_I / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+
+proc glm data= All_V4 plots=All; class Block Treat_I;
+model Simpson =Treat_I;
+/*HOV test*/
+means Treat_I / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+proc mixed data=All_V4 method=REML plots=all;
+class Seed Block Treat_I;
+model LogRich = Treat_I|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat_I Block*Seed*Treat_I;
+Lsmeans Treat_I|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_V4 method=REML plots=all;
+class Seed Block Treat_I;
+model Shannon = Treat_I|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat_I Block*Seed*Treat_I;
+Lsmeans Treat_I|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_V4 method=REML plots=all;
+class Seed Block Treat_I;
+model Simpson = Treat_I|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat_I Block*Seed*Treat_I;
+Lsmeans Treat_I|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_V4 method=REML plots=all;
+class Block Treat_I;
+model LogRich = Treat_I/ddfm=kenwardroger;
+random Block Block*Treat_I;
+Lsmeans Treat_I/ pdiff; 
+run; quit;
+
+proc mixed data=All_V4 method=REML plots=all;
+class Block Treat_I;
+model Shannon = Treat_I/ddfm=kenwardroger;
+random Block Block*Treat_I;
+Lsmeans Treat_I/pdiff; 
+run; quit;
+
+proc mixed data=All_V4 method=REML plots=all;
+class Block Treat_I;
+model Simpson = Treat_I/ddfm=kenwardroger;
+random Block Block*Treat_I;
+Lsmeans Treat_I/ pdiff; 
+run; quit;
+
+
+Data All_R3; 
+input Plot_ID$ Seed$ Block$ Treat$ Treat_I$ Stage$ Sample_ID$ Rich LogRich Chao1 ACE Shannon Simpson;
+cards;
+18QM1022 LD13-14071R2 1 Inoc/yes Inoc R2-R3 BC06 259 2.413299764 378.625 351.0818 2.814042 0.8880909
+18QM2011 LD13-14071R2 2 Inoc/yes Inoc R2-R3 BC07 472 2.673941999 566.25 555.0851 1.750273 0.6497553
+18QM2033 Williams 2 not_inoc/no not_inoc R2-R3 BC08 504 2.702430536 687.1149 682.4623 2.892456 0.8687711
+18QM3022 LD13-14071R2 3 not_inoc/yes not_inoc R2-R3 BC09 822 2.914871818 1025.0303 960.5783 2.697995 0.8366598
+18QM1023 Williams 1 Inoc/yes Inoc R2-R3 BC18 222 2.346352974 366.2857 384.6626 2.962064 0.9130315
+18QM2012 LD12-8677 2 Inoc/yes Inoc R2-R3 BC19 448 2.651278014 689.1538 781.2759 1.871667 0.6607163
+18QM3023 LD12-8677 3 not_inoc/yes not_inoc R2-R3 BC21 540 2.73239376 755.0092 784.4903 2.224637 0.7710568
+18QM1031 LD13-14071R2 1 not_inoc/yes not_inoc R2-R3 BC30 536 2.72916479 836.3111 875.0682 2.599036 0.8596658
+18QM2013 Williams 2 Inoc/yes Inoc R2-R3 BC31 745 2.872156273 1131.6667 1152.868 2.205563 0.7716978
+18QM2042 Williams 2 not_inoc/yes not_inoc R2-R3 BC32 1319 3.120244796 1694.375 1600.5342 2.965568 0.8949708
+18QM3031 Williams 3 Inoc/no Inoc R2-R3 BC33 301 2.478566496 651.7 712.1223 2.432683 0.8262944
+18QM1032 LD12-8677 1 not_inoc/yes not_inoc R2-R3 BC42 467 2.669316881 911.5405 937.9037 2.906392 0.8842667
+18QM2021 LD13-14071R2 2 Inoc/no Inoc R2-R3 BC43 865 2.937016107 1226.6887 1226.0921 2.810768 0.8259246
+18QM2043 LD12-8677 2 not_inoc/yes not_inoc R2-R3 BC44 388 2.588831726 787 798.8595 2.671372 0.8567815
+18QM3032 LD13-14071R2 3 Inoc/no Inoc R2-R3 BC45 682 2.833784375 1063.4688 1132.0416 1.636153 0.6173443
+18QM1033 Williams 1 not_inoc/yes not_inoc R2-R3 BC54 196 2.292256071 517.1765 405.527 2.855606 0.8938226
+18QM2022 LD12-8677 2 Inoc/no Inoc R2-R3 BC55 803 2.904715545 1303.52 1415.9444 3.144812 0.8984655
+18QM3011 LD12-8677 3 Inoc/yes Inoc R2-R3 BC56 813 2.910090546 1213.865 1267.4354 1.668689 0.6280961
+18QM3033 LD12-8677 3 Inoc/no Inoc R2-R3 BC57 484 2.684845362 877.0706 962.8917 1.910437 0.685227
+18QM1012 Williams 1 Inoc/no Inoc R2-R3 BC65 144 2.158362492 211.7778 248.1574 3.213466 0.938175
+18QM1041 LD13-14071R2 1 not_inoc/no not_inoc R2-R3 BC66 391 2.592176757 937.8571 1025.3946 2.674928 0.8644239
+18QM2023 Williams 2 Inoc/no Inoc R2-R3 BC67 849 2.92890769 1503.8889 1493.7817 3.26044 0.9124143
+18QM3012 LD13-14071R2 3 Inoc/yes Inoc R2-R3 BC68 468 2.670245853 862.939 963.1738 1.253096 0.5682774
+18QM3041 Williams 3 not_inoc/no not_inoc R2-R3 BC69 813 2.910090546 1420.8873 1505.65 2.182265 0.7607624
+18QM1013 LD12-8677 1 Inoc/no Inoc R2-R3 BC77 217 2.336459734 322 318.9823 3.38734 0.931326
+18QM1042 Williams 1 not_inoc/no not_inoc R2-R3 BC78 353 2.547774705 756.2222 731.2927 2.895872 0.889473
+18QM2031 LD13-14071R2 2 not_inoc/no not_inoc R2-R3 BC79 289 2.460897843 545.4186 591.1373 2.614896 0.85025
+18QM3013 Williams 3 Inoc/yes Inoc R2-R3 BC80 942 2.974050903 1489.4531 1602.0802 1.921942 0.6820499
+18QM3042 LD13-14071R2 3 not_inoc/no not_inoc R2-R3 BC81 489 2.689308859 986.1923 1101.7796 1.738715 0.6683633
+18QM1021 LD12-8677 1 Inoc/yes Inoc R2-R3 BC89 305 2.484299839 705.6579 674.2282 3.260098 0.9337541
+18QM1043 LD12-8677 1 not_inoc/no not_inoc R2-R3 BC90 327 2.514547753 699.6923 691.7173 3.064744 0.9125485
+18QM2032 LD12-8677 2 not_inoc/no not_inoc R2-R3 BC91 601 2.778874472 1095.1471 1150.8154 2.603756 0.8576326
+18QM3021 Williams 3 not_inoc/yes not_inoc R2-R3 BC92 564 2.751279104 1087.8947 1066.7674 1.634594 0.6394545
+18QM3043 LD12-8677 3 not_inoc/no not_inoc R2-R3 BC93 593 2.773054693 1243.3294 1184.21 1.789985 0.6618691
+;;;
+proc glm data= All_R3 plots=All; class Block Treat_I;
+model LogRich =Treat_I;
+/*HOV test*/
+means Treat_I / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+
+proc glm data= All_R3 plots=All; class Block Treat_I;
+model Shannon =Treat_I;
+/*HOV test*/
+means Treat_I / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+
+proc glm data= All_R3 plots=All; class Block Treat_I;
+model Simpson =Treat_I;
+/*HOV test*/
+means Treat_I / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+proc mixed data=All_R3 method=REML plots=all;
+class Seed Block Treat_I;
+model LogRich = Treat_I|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat_I Block*Seed*Treat_I;
+Lsmeans Treat_I|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_R3 method=REML plots=all;
+class Seed Block Treat_I;
+model Shannon = Treat_I|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat_I Block*Seed*Treat_I;
+Lsmeans Treat_I|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_R3 method=REML plots=all;
+class Seed Block Treat_I;
+model Simpson = Treat_I|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat_I Block*Seed*Treat_I;
+Lsmeans Treat_I|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_R3 method=REML plots=all;
+class Block Treat_I;
+model LogRich = Treat_I/ddfm=kenwardroger;
+random Block Block*Treat_I;
+Lsmeans Treat_I/ pdiff; 
+run; quit;
+
+proc mixed data=All_R3 method=REML plots=all;
+class Block Treat_I;
+model Shannon = Treat_I/ddfm=kenwardroger;
+random Block Block*Treat_I;
+Lsmeans Treat_I/pdiff; 
+run; quit;
+
+proc mixed data=All_R3 method=REML plots=all;
+class Block Treat_I;
+model Simpson = Treat_I/ddfm=kenwardroger;
+random Block Block*Treat_I;
+Lsmeans Treat_I/ pdiff; 
+run; quit;
+
+Data All_R5; 
+input Plot_ID$ Seed$ Block$ Treat$ Treat_I$ Treat_F$ Stage$ Sample_ID$ Rich LogRich Chao1 ACE Shannon Simpson;
+cards;
+18QM1012 Williams 1 Inoc/no Inoc no R5 BC10 826 2.916980047 1085.7845 1032.553 2.479605 0.8111854
+18QM1042 Williams 1 ninoc/no not_inoc no R5 BC11 630 2.799340549 929.0545 912.6869 1.770436 0.6679703
+18QM3021 Williams 3 ninoc/yes not_inoc yes R5 BC12 460 2.662757832 698.1299 738.1011 2.370251 0.8303574
+18QM1013 LD12-8677 1 Inoc/no Inoc no R5 BC22 478 2.679427897 847.1176 899.3232 1.962604 0.6939416
+18QM1043 LD12-8677 1 ninoc/no not_inoc no R5 BC23 737 2.867467488 1147.2609 1215.7661 2.580123 0.8453086
+18QM3022 LD13-14071R2 3 ninoc/yes not_inoc yes R5 BC24 322 2.507855872 540.1667 590.1005 2.560411 0.8469779
+18QM1021 LD12-8677 1 Inoc/yes Inoc yes R5 BC34 784 2.894316063 1109.6 1104.671 2.768459 0.866452
+18QM2013 Williams 2 Inoc/yes Inoc yes R5 BC35 731 2.863917377 1060.7794 1098.9275 2.473256 0.8446408
+18QM3023 LD12-8677 3 ninoc/yes not_inoc yes R5 BC36 510 2.707570176 850.5405 839.7353 2.539453 0.8423684
+18QM1022 LD13-14071R2 1 Inoc/yes Inoc yes R5 BC46 563 2.750508395 914.1235 882.3422 2.340245 0.8378572
+18QM2021 LD13-14071R2 2 Inoc/no Inoc no R5 BC47 901 2.954724791 1341.2236 1359.1965 2.101447 0.7095254
+18QM3031 Williams 3 Inoc/no Inoc no R5 BC48 269 2.42975228 608.9375 593.6915 2.352421 0.8313743
+18QM1031 LD13-14071R2 1 ninoc/yes not_inoc yes R5 BC58 301 2.478566496 643.1463 663.1241 2.592895 0.8817179
+18QM2031 LD13-14071R2 2 ninoc/no not_inoc no R5 BC59 1181 3.072249898 1712.4395 1566.5469 3.09645 0.8510935
+18QM3032 LD13-14071R2 3 Inoc/no Inoc no R5 BC60 666 2.823474229 1077.3711 1017.4485 2.570346 0.8534593
+18QM1032 LD12-8677 1 ninoc/yes not_inoc yes R5 BC70 1229 3.089551883 1596.1875 1557.1376 2.556432 0.8366246
+18QM3011 LD12-8677 3 Inoc/yes Inoc yes R5 BC71 335 2.525044807 497.0182 507.0887 2.559109 0.8736093
+18QM3033 LD12-8677 3 Inoc/no Inoc no R5 BC72 621 2.7930916 919.75 893.0993 2.458835 0.8505028
+18QM1033 Williams 1 ninoc/yes not_inoc yes R5 BC82 805 2.90579588 1228.8258 1237.9861 2.860191 0.8963487
+18QM3012 LD13-14071R2 3 Inoc/yes Inoc yes R5 BC83 269 2.42975228 483.0976 530.6487 2.68276 0.8838401
+18QM3041 Williams 3 ninoc/no not_inoc no R5 BC84 588 2.769377326 1004.0233 970.8381 2.491764 0.8556334
+18QM1041 LD13-14071R2 1 ninoc/no not_inoc no R5 BC94 927 2.967079734 1383.75 1348.1575 2.124501 0.6937797
+18QM3013 Williams 3 Inoc/yes Inoc yes R5 BC95 386 2.586587305 710.1935 803.1148 2.555698 0.8537761
+18QM3043 LD12-8677 3 ninoc/no not_inoc no R5 BC96 216 2.334453751 458.3571 432.8212 2.237618 0.8248483
+
+;;;
+proc glm data= All_R5 plots=All; class Block Treat;
+model LogRich =Treat;
+/*HOV test*/
+means Treat / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+
+proc glm data= All_R5 plots=All; class Block Treat;
+model Shannon =Treat;
+/*HOV test*/
+means Treat / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+
+proc glm data= All_R5 plots=All; class Block Treat;
+model Simpson =Treat;
+/*HOV test*/
+means Treat / hovtest=bf;  
+output out=Resids r=residual;
+run; quit;
+
+/*Normality test*/
+proc univariate data=Resids plot normal;var residual;
+run;
+
+proc mixed data=All_R5 method=REML plots=all;
+class Seed Block Treat;
+model LogRich = Treat|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat Block*Seed*Treat;
+Lsmeans Treat|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_R5 method=REML plots=all;
+class Seed Block Treat;
+model Shannon = Treat|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat Block*Seed*Treat;
+Lsmeans Treat|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_R5 method=REML plots=all;
+class Seed Block Treat;
+model Simpson = Treat|Seed/ddfm=kenwardroger;
+random Block Block*Seed Block*Treat Block*Seed*Treat;
+Lsmeans Treat|Seed / pdiff; 
+run; quit;
+
+proc mixed data=All_R5 method=REML plots=all;
+class Block Treat;
+model LogRich = Treat/ddfm=kenwardroger;
+random Block Block*Treat;
+Lsmeans Treat/ pdiff; 
+run; quit;
+
+proc mixed data=All_R5 method=REML plots=all;
+class Block Treat;
+model Shannon = Treat/ddfm=kenwardroger;
+random Block Block*Treat;
+Lsmeans Treat/pdiff; 
+run; quit;
+
+proc mixed data=All_R5 method=REML plots=all;
+class Block Treat;
+model Simpson = Treat/ddfm=kenwardroger;
+random Block Block*Treat;
+Lsmeans Treat/ pdiff; 
+run; quit;
+
+
