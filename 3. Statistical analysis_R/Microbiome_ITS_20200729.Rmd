@@ -1,0 +1,1621 @@
+---
+title: "Microbiome data analysis"
+author: "Heng-An Lin"
+date: "07292020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Packages
+Here are all the packages for microbiome analysis.
+
+```{r Packages}
+library("phyloseq")
+library("dplyr")
+library("ggplot2")
+library("grid")
+library("permute")
+library("lattice")
+library("vegan")
+library("Biostrings")
+library("BiocGenerics")
+library("parallel")
+library ("DECIPHER")
+library("ape")
+library("phangorn")
+library("base")
+library("MASS")
+library("Biobase")
+library("DESeq2")
+library ("rlang")
+library("ape")
+library("ade4")
+library("data.table")
+library("ips")
+library("devtools")
+library("SpiecEasi")
+library("igraph")
+library("superheat")
+library("tidyverse")
+library("RColorBrewer")
+library("microbiome")
+library("GGally")
+library("intergraph")
+library("network")
+library("ggnetwork")
+library("microbiomeutilities")
+```
+
+# Inport data and preperation
+First, we need to input the data export from the Biocluster. 
+The phyloseq input data include four parts: 
+
+1. featuretable_ITS: taxonomy information for OTUs
+
+2. frequencytable: counts for each OTUs
+
+3. samples matadata: Sample information (e.g. treatment)
+
+4. Reference sequence: Sequence for each OTU 
+
+```{r input dataset}
+getwd()
+setwd("D:/PHD/Soybean microbiome_Nanopore/Microbiome_analysis_in_R/MIcrobiome_OTU_ID92_20200729/phyloseq_input")
+
+featuretable_ITS <- read.csv("ITS_V8.2_featuretable_m.txt", header = TRUE, row.names=1, sep="")
+featuretable <-tax_table(as.matrix(featuretable_ITS))
+
+
+frequencytable_OTU <- read.csv("OTU_frequencytable.txt", header = TRUE, row.names=1, sep="")
+frequencytable <- otu_table(as.matrix(frequencytable_OTU),taxa_are_rows=TRUE)
+
+              
+                                      
+```
+
+
+```{r input dataset}
+getwd()
+setwd("D:/PHD/Soybean microbiome_Nanopore/Microbiome_analysis_in_R/MIcrobiome_OTU_ID92_20200729/phyloseq_input")
+Sample_metadata <- read.csv("Sample_metadata.txt", header = TRUE, row.names=1, sep="")
+
+str(Sample_metadata)
+Sample_metadata$Rep <- as.factor(Sample_metadata$Rep)
+sampledata <- sample_data(Sample_metadata)
+sampledata
+
+
+Samplemetadata_merged <- read.csv("Samplemetadata_Merged.txt", header = TRUE, row.names=1, sep="")
+Samplemetadata_Merged <- sample_data(Samplemetadata_merged)
+Samplemetadata_Merged
+
+
+                                                        
+```
+
+
+
+```{r input dataset}
+
+getwd()
+setwd("D:/PHD/Soybean microbiome_Nanopore/Microbiome_analysis_in_R/MIcrobiome_OTU_ID92_20200729/phyloseq_input/Refseq_all")
+
+temp4 = list.files(pattern="*.*fasta")
+temp4
+for (i in 1:length(temp4)) assign(temp4[i], readDNAStringSet(file=(temp4[i]), format = "fasta",
+                                                             nrec = -1L, 
+                                                             skip = 0L, 
+                                                             seek.first.rec = FALSE, 
+                                                             use.names = TRUE))
+
+
+
+```
+
+
+Then, combine the taxonomy table, frequency table, and reference sequence table into a phyloseq object ('phyloseq') for each sample.   
+
+
+```{r}
+physeq <- phyloseq(frequencytable, featuretable, sampledata)
+physeq
+
+
+physeq_ITS <- phyloseq(frequencytable, featuretable, refseq(ITS_2.fasta), sampledata)
+physeq_ITS
+
+```
+
+
+
+Here, the OTUs were merged with genus level with 'tax_glom'.
+
+
+```{r}
+#merge the OTU with same tax (Genus/Species) level 
+physeq_mergeOTU <- tax_glom(physeq, taxrank = "Genus")
+physeq_mergeOTU
+
+physeq_ITS_mergeOTU <- tax_glom(physeq_ITS, taxrank = "Genus")
+physeq_ITS_mergeOTU
+
+```
+
+#Alpha diversity analysis
+
+Plot the alpha diversity (the diverisyt within each sample) plot with three diversity index 
+
+Observed: number of OTUs, the same as "richness" 
+
+Shannon: accounts for both abundance and evenness of the species present (How difficult it is to predict the identity of a randomly chosen individual.)
+
+Simpson: Give more weithgt to the common or dominent species (The probability that two randomly chosen individuals are the same species.)
+
+
+```{r}
+#plot alpha diversity 
+#You must use untrimmed, non-normalized count data for meaningful results
+
+
+rich = estimate_richness(physeq) 
+kruskal.test(rich$Observed, sample_data(physeq)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq)$Treatment)
+
+
+rich = estimate_richness(physeq_mergeOTU) 
+kruskal.test(rich$Observed, sample_data(physeq_mergeOTU)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_mergeOTU)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_mergeOTU)$Stage)
+
+
+physeq_V4 <- subset_samples(physeq, Stage=="V4-R1")
+physeq_V4
+rich = estimate_richness(physeq_V4) 
+kruskal.test(rich$Observed, sample_data(physeq_V4)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4)$Treat_Inoc)
+
+kruskal.test(rich$Observed, sample_data(physeq_V4)$Seed)
+kruskal.test(rich$Shannon, sample_data(physeq_V4)$Seed)
+kruskal.test(rich$Simpson, sample_data(physeq_V4)$Seed)
+            
+             
+physeq_R3 <- subset_samples(physeq, Stage=="R2-R3")
+rich = estimate_richness(physeq_R3) 
+kruskal.test(rich$Observed, sample_data(physeq_R3)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3)$Treat_Inoc)
+
+kruskal.test(rich$Observed, sample_data(physeq_R3)$Seed)
+kruskal.test(rich$Shannon, sample_data(physeq_R3)$Seed)
+kruskal.test(rich$Simpson, sample_data(physeq_R3)$Seed)
+
+physeq_R5 <- subset_samples(physeq, Stage=="R5")
+sample_data(physeq_R5)
+rich = estimate_richness(physeq_R5) 
+kruskal.test(rich$Observed, sample_data(physeq_R5)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5)$Treatment)
+
+kruskal.test(rich$Observed, sample_data(physeq_R5)$Seed)
+kruskal.test(rich$Shannon, sample_data(physeq_R5)$Seed)
+kruskal.test(rich$Simpson, sample_data(physeq_R5)$Seed)
+
+
+
+
+physeq_V4_mergeOTU <- subset_samples(physeq_mergeOTU, Stage=="V4-R1")
+physeq_V4_mergeOTU
+rich = estimate_richness(physeq_V4_mergeOTU) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_mergeOTU)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_mergeOTU)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_mergeOTU)$Treat_Inoc)
+
+kruskal.test(rich$Observed, sample_data(physeq_V4_mergeOTU)$Seed)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_mergeOTU)$Seed)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_mergeOTU)$Seed)
+            
+             
+physeq_R3_mergeOTU <- subset_samples(physeq_mergeOTU, Stage=="R2-R3")
+rich = estimate_richness(physeq_R3_mergeOTU) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_mergeOTU)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_mergeOTU)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_mergeOTU)$Treat_Inoc)
+
+kruskal.test(rich$Observed, sample_data(physeq_R3_mergeOTU)$Seed)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_mergeOTU)$Seed)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_mergeOTU)$Seed)
+
+physeq_R5_mergeOTU <- subset_samples(physeq_mergeOTU, Stage=="R5")
+rich = estimate_richness(physeq_R5_mergeOTU) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_mergeOTU)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_mergeOTU)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_mergeOTU)$Treatment)
+
+kruskal.test(rich$Observed, sample_data(physeq_R5_mergeOTU)$Seed)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_mergeOTU)$Seed)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_mergeOTU)$Seed)
+
+```
+
+
+
+```{r}
+physeq_V4_W <- subset_samples(physeq_V4, Seed=="Williams")
+rich = estimate_richness(physeq_V4_W) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_W)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_W)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_W)$Treat_Inoc)
+
+
+physeq_V4_LD12 <- subset_samples(physeq_V4, Seed=="LD12-8677")
+rich = estimate_richness(physeq_V4_LD12) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_LD12)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_LD12)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_LD12)$Treat_Inoc)
+
+physeq_V4_LD13 <- subset_samples(physeq_V4, Seed=="LD13-14071R2")
+rich = estimate_richness(physeq_V4_LD13) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_LD13)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_LD13)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_LD13)$Treat_Inoc)
+```
+
+
+
+```{r}
+physeq_R3_W <- subset_samples(physeq_R3, Seed=="Williams")
+physeq_R3_W
+rich = estimate_richness(physeq_R3_W) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_W)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_W)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_W)$Treat_Inoc)
+
+
+physeq_R3_LD12 <- subset_samples(physeq_R3, Seed=="LD12-8677")
+physeq_R3_LD12
+rich = estimate_richness(physeq_R3_LD12) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_LD12)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_LD12)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_LD12)$Treat_Inoc)
+
+physeq_R3_LD13 <- subset_samples(physeq_R3, Seed=="LD13-14071R2")
+physeq_R3_LD13
+rich = estimate_richness(physeq_R3_LD13) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_LD13)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_LD13)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_LD13)$Treat_Inoc)
+```
+
+
+
+```{r}
+physeq_R5_W <- subset_samples(physeq_R5, Seed=="Williams")
+physeq_R5_W
+rich = estimate_richness(physeq_R5_W) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_W)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_W)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_W)$Treatment)
+
+
+physeq_R5_LD12 <- subset_samples(physeq_R5, Seed=="LD12-8677")
+physeq_R5_LD12
+rich = estimate_richness(physeq_R5_LD12) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_LD12)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_LD12)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_LD12)$Treatment)
+
+physeq_R5_LD13 <- subset_samples(physeq_R5, Seed=="LD13-14071R2")
+physeq_R5_LD13
+rich = estimate_richness(physeq_R5_LD13) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_LD13)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_LD13)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_LD13)$Treatment)
+```
+      
+
+
+```{r}
+physeq_V4_mergeOTU_W <- subset_samples(physeq_V4_mergeOTU, Seed=="Williams")
+physeq_V4_mergeOTU_W
+rich = estimate_richness(physeq_V4_mergeOTU_W) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_mergeOTU_W)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_mergeOTU_W)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_mergeOTU_W)$Treat_Inoc)
+
+
+physeq_V4_mergeOTU_LD12 <- subset_samples(physeq_V4_mergeOTU, Seed=="LD12-8677")
+physeq_V4_mergeOTU_LD12
+rich = estimate_richness(physeq_V4_mergeOTU_LD12) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_mergeOTU_LD12)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_mergeOTU_LD12)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_mergeOTU_LD12)$Treat_Inoc)
+
+
+
+physeq_V4_mergeOTU_LD13 <- subset_samples(physeq_V4_mergeOTU, Seed=="LD13-14071R2")
+physeq_V4_mergeOTU_LD13
+rich = estimate_richness(physeq_V4_mergeOTU_LD13) 
+kruskal.test(rich$Observed, sample_data(physeq_V4_mergeOTU_LD13)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_V4_mergeOTU_LD13)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_V4_mergeOTU_LD13)$Treat_Inoc)
+
+```
+
+
+```{r}           
+physeq_R3_mergeOTU_W <- subset_samples(physeq_R3_mergeOTU, Seed=="Williams")
+physeq_R3_mergeOTU_W
+rich = estimate_richness(physeq_R3_mergeOTU_W) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_mergeOTU_W)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_mergeOTU_W)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_mergeOTU_W)$Treat_Inoc)
+
+
+physeq_R3_mergeOTU_LD12 <- subset_samples(physeq_R3_mergeOTU, Seed=="LD12-8677")
+physeq_R3_mergeOTU_LD12
+rich = estimate_richness(physeq_R3_mergeOTU_LD12) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_mergeOTU_LD12)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_mergeOTU_LD12)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_mergeOTU_LD12)$Treat_Inoc)
+
+
+
+physeq_R3_mergeOTU_LD13 <- subset_samples(physeq_R3_mergeOTU, Seed=="LD13-14071R2")
+physeq_R3_mergeOTU_LD13
+rich = estimate_richness(physeq_R3_mergeOTU_LD13) 
+kruskal.test(rich$Observed, sample_data(physeq_R3_mergeOTU_LD13)$Treat_Inoc)
+kruskal.test(rich$Shannon, sample_data(physeq_R3_mergeOTU_LD13)$Treat_Inoc)
+kruskal.test(rich$Simpson, sample_data(physeq_R3_mergeOTU_LD13)$Treat_Inoc)
+
+```
+
+```{r}           
+physeq_R5_mergeOTU_W <- subset_samples(physeq_R5_mergeOTU, Seed=="Williams")
+physeq_R5_mergeOTU_W
+rich = estimate_richness(physeq_R5_mergeOTU_W) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_mergeOTU_W)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_mergeOTU_W)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_mergeOTU_W)$Treatment)
+
+
+physeq_R5_mergeOTU_LD12 <- subset_samples(physeq_R5_mergeOTU, Seed=="LD12-8677")
+physeq_R5_mergeOTU_LD12
+rich = estimate_richness(physeq_R5_mergeOTU_LD12) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_mergeOTU_LD12)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_mergeOTU_LD12)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_mergeOTU_LD12)$Treatment)
+
+
+
+physeq_R5_mergeOTU_LD13 <- subset_samples(physeq_R5_mergeOTU, Seed=="LD13-14071R2")
+physeq_R5_mergeOTU_LD13
+rich = estimate_richness(physeq_R5_mergeOTU_LD13) 
+kruskal.test(rich$Observed, sample_data(physeq_R5_mergeOTU_LD13)$Treatment)
+kruskal.test(rich$Shannon, sample_data(physeq_R5_mergeOTU_LD13)$Treatment)
+kruskal.test(rich$Simpson, sample_data(physeq_R5_mergeOTU_LD13)$Treatment)
+
+```
+
+
+
+```{r}
+
+physeq_LD13 <- subset_samples(physeq, Seed=="LD13-14071R2")
+
+physeq_LD13_Inoc_no <- subset_samples(physeq_LD13,Treatment=="Inoc/no")
+physeq_LD13_Inoc_no
+rich = estimate_richness(physeq_LD13_Inoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_Inoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_Inoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_Inoc_no)$Stage)
+
+
+physeq_LD13_notinoc_yes <- subset_samples(physeq_LD13,Treatment=="not_inoc/yes")
+physeq_LD13_notinoc_yes
+rich = estimate_richness(physeq_LD13_notinoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_notinoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_notinoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_notinoc_yes)$Stage)
+
+physeq_LD13_Inoc_yes <- subset_samples(physeq_LD13,Treatment=="Inoc/yes")
+physeq_LD13_Inoc_yes
+rich = estimate_richness(physeq_LD13_Inoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_Inoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_Inoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_Inoc_yes)$Stage)
+
+physeq_LD13_notinoc_no <- subset_samples(physeq_LD13,Treatment=="not_inoc/no")
+physeq_LD13_notinoc_no
+rich = estimate_richness(physeq_LD13_notinoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_notinoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_notinoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_notinoc_no)$Stage)
+
+
+```
+```{r}
+physeq_W <- subset_samples(physeq, Seed=="Williams")
+
+physeq_W_Inoc_no <- subset_samples(physeq_W,Treatment=="Inoc/no")
+physeq_W_Inoc_no
+rich = estimate_richness(physeq_W_Inoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_W_Inoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_Inoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_Inoc_no)$Stage)
+
+
+physeq_W_notinoc_yes <- subset_samples(physeq_W,Treatment=="not_inoc/yes")
+physeq_W_notinoc_yes
+rich = estimate_richness(physeq_W_notinoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_W_notinoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_notinoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_notinoc_yes)$Stage)
+
+physeq_W_Inoc_yes <- subset_samples(physeq_W,Treatment=="Inoc/yes")
+physeq_W_Inoc_yes
+rich = estimate_richness(physeq_W_Inoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_W_Inoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_Inoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_Inoc_yes)$Stage)
+
+physeq_W_notinoc_no <- subset_samples(physeq_W,Treatment=="not_inoc/no")
+physeq_W_notinoc_no
+rich = estimate_richness(physeq_W_notinoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_W_notinoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_notinoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_notinoc_no)$Stage)
+
+```
+
+```{r}
+physeq_LD12 <- subset_samples(physeq, Seed=="LD12-8677")
+
+physeq_LD12_Inoc_no <- subset_samples(physeq_LD12,Treatment=="Inoc/no")
+physeq_LD12_Inoc_no
+rich = estimate_richness(physeq_LD12_Inoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_Inoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_Inoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_Inoc_no)$Stage)
+
+
+physeq_LD12_notinoc_yes <- subset_samples(physeq_LD12,Treatment=="not_inoc/yes")
+physeq_LD12_notinoc_yes
+rich = estimate_richness(physeq_LD12_notinoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_notinoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_notinoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_notinoc_yes)$Stage)
+
+physeq_LD12_Inoc_yes <- subset_samples(physeq_LD12,Treatment=="Inoc/yes")
+physeq_LD12_Inoc_yes
+rich = estimate_richness(physeq_LD12_Inoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_Inoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_Inoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_Inoc_yes)$Stage)
+
+physeq_LD12_notinoc_no <- subset_samples(physeq_LD12,Treatment=="not_inoc/no")
+physeq_LD12_notinoc_no
+rich = estimate_richness(physeq_LD12_notinoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_notinoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_notinoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_notinoc_no)$Stage)
+
+```
+
+
+```{r}
+
+physeq_LD13_mergeOTU <- subset_samples(physeq_mergeOTU, Seed=="LD13-14071R2")
+
+physeq_LD13_mergeOTU_Inoc_no <- subset_samples(physeq_LD13_mergeOTU,Treatment=="Inoc/no")
+physeq_LD13_mergeOTU_Inoc_no
+rich = estimate_richness(physeq_LD13_mergeOTU_Inoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_mergeOTU_Inoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_mergeOTU_Inoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_mergeOTU_Inoc_no)$Stage)
+
+
+physeq_LD13_mergeOTU_notinoc_yes <- subset_samples(physeq_LD13_mergeOTU,Treatment=="not_inoc/yes")
+physeq_LD13_mergeOTU_notinoc_yes
+rich = estimate_richness(physeq_LD13_mergeOTU_notinoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_mergeOTU_notinoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_mergeOTU_notinoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_mergeOTU_notinoc_yes)$Stage)
+
+physeq_LD13_mergeOTU_Inoc_yes <- subset_samples(physeq_LD13_mergeOTU,Treatment=="Inoc/yes")
+physeq_LD13_mergeOTU_Inoc_yes
+rich = estimate_richness(physeq_LD13_mergeOTU_Inoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_mergeOTU_Inoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_mergeOTU_Inoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_mergeOTU_Inoc_yes)$Stage)
+
+physeq_LD13_mergeOTU_notinoc_no <- subset_samples(physeq_LD13_mergeOTU,Treatment=="not_inoc/no")
+physeq_LD13_mergeOTU_notinoc_no
+rich = estimate_richness(physeq_LD13_mergeOTU_notinoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD13_mergeOTU_notinoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD13_mergeOTU_notinoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD13_mergeOTU_notinoc_no)$Stage)
+
+
+```
+
+
+```{r}
+
+physeq_LD12_mergeOTU <- subset_samples(physeq_mergeOTU, Seed=="LD12-8677")
+
+physeq_LD12_mergeOTU_Inoc_no <- subset_samples(physeq_LD12_mergeOTU,Treatment=="Inoc/no")
+physeq_LD12_mergeOTU_Inoc_no
+rich = estimate_richness(physeq_LD12_mergeOTU_Inoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_mergeOTU_Inoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_mergeOTU_Inoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_mergeOTU_Inoc_no)$Stage)
+
+
+physeq_LD12_mergeOTU_notinoc_yes <- subset_samples(physeq_LD12_mergeOTU,Treatment=="not_inoc/yes")
+physeq_LD12_mergeOTU_notinoc_yes
+rich = estimate_richness(physeq_LD12_mergeOTU_notinoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_mergeOTU_notinoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_mergeOTU_notinoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_mergeOTU_notinoc_yes)$Stage)
+
+physeq_LD12_mergeOTU_Inoc_yes <- subset_samples(physeq_LD12_mergeOTU,Treatment=="Inoc/yes")
+physeq_LD12_mergeOTU_Inoc_yes
+rich = estimate_richness(physeq_LD12_mergeOTU_Inoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_mergeOTU_Inoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_mergeOTU_Inoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_mergeOTU_Inoc_yes)$Stage)
+
+physeq_LD12_mergeOTU_notinoc_no <- subset_samples(physeq_LD12_mergeOTU,Treatment=="not_inoc/no")
+physeq_LD12_mergeOTU_notinoc_no
+rich = estimate_richness(physeq_LD12_mergeOTU_notinoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_LD12_mergeOTU_notinoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_LD12_mergeOTU_notinoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_LD12_mergeOTU_notinoc_no)$Stage)
+
+
+```
+
+```{r}
+
+physeq_W_mergeOTU <- subset_samples(physeq_mergeOTU, Seed=="Williams")
+
+physeq_W_mergeOTU_Inoc_no <- subset_samples(physeq_W_mergeOTU,Treatment=="Inoc/no")
+physeq_W_mergeOTU_Inoc_no
+rich = estimate_richness(physeq_W_mergeOTU_Inoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_W_mergeOTU_Inoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_mergeOTU_Inoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_mergeOTU_Inoc_no)$Stage)
+
+
+physeq_W_mergeOTU_notinoc_yes <- subset_samples(physeq_W_mergeOTU,Treatment=="not_inoc/yes")
+physeq_W_mergeOTU_notinoc_yes
+rich = estimate_richness(physeq_W_mergeOTU_notinoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_W_mergeOTU_notinoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_mergeOTU_notinoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_mergeOTU_notinoc_yes)$Stage)
+
+physeq_W_mergeOTU_Inoc_yes <- subset_samples(physeq_W_mergeOTU,Treatment=="Inoc/yes")
+physeq_W_mergeOTU_Inoc_yes
+rich = estimate_richness(physeq_W_mergeOTU_Inoc_yes) 
+kruskal.test(rich$Observed, sample_data(physeq_W_mergeOTU_Inoc_yes)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_mergeOTU_Inoc_yes)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_mergeOTU_Inoc_yes)$Stage)
+
+physeq_W_mergeOTU_notinoc_no <- subset_samples(physeq_W_mergeOTU,Treatment=="not_inoc/no")
+physeq_W_mergeOTU_notinoc_no
+rich = estimate_richness(physeq_W_mergeOTU_notinoc_no) 
+kruskal.test(rich$Observed, sample_data(physeq_W_mergeOTU_notinoc_no)$Stage)
+kruskal.test(rich$Shannon, sample_data(physeq_W_mergeOTU_notinoc_no)$Stage)
+kruskal.test(rich$Simpson, sample_data(physeq_W_mergeOTU_notinoc_no)$Stage)
+
+
+```
+
+```{r}
+plot_richness(physeq, x="Treatment", measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()
+
+level_order <- c('V4-R1', 'R2-R3', 'R5') #this vector might be useful for other plots/analyses
+
+p <- plot_richness(physeq, x ="Stage", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed+Treatment, scale="free_y")
+p$data$Stage <- as.character(p$data$Stage)
+p$data$Stage <- factor(p$data$Stage, levels=level_order)
+print(p)
+
+
+
+p <- plot_richness(physeq_V4, x ="Treat_Inoc", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed, scale="free_y")
+p
+
+p <- plot_richness(physeq_R3, x ="Treat_Inoc", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed, scale="free_y")
+p
+
+
+p <- plot_richness(physeq_R5, x ="Treatment", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed, scale="free_y")
+p
+
+
+p <- plot_richness(physeq_V4_mergeOTU, x ="Treat_Inoc", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed, scale="free_y")
+p
+
+p <- plot_richness(physeq_R3_mergeOTU, x ="Treat_Inoc", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed, scale="free_y")
+p
+
+
+p <- plot_richness(physeq_R5_mergeOTU, x ="Treatment", color="Seed" , measures=c("Observed", "Shannon", "Simpson") )+ geom_boxplot()+facet_grid(variable~Seed, scale="free_y")
+p
+
+
+
+
+```
+
+
+
+```{r}
+level_order <- c('V4-R1', 'R2-R3', 'R5') #this vector might be useful for other plots/analyses
+
+p <- plot_richness(physeq, x ="Stage", color="Seed" , measures=c("Observed") )+ geom_boxplot()+facet_grid(variable~Seed+Treatment, scale="free_y")
+p$data$Stage <- as.character(p$data$Stage)
+p$data$Stage <- factor(p$data$Stage, levels=level_order)
+print(p)
+
+
+
+p <- plot_richness(physeq, x ="Stage", color="Seed" , measures=c("Observed") )+facet_grid(variable~Seed+Treatment, scale="free_y")
+p$data$Stage <- as.character(p$data$Stage)
+p$data$Stage <- factor(p$data$Stage, levels=level_order)
+print(p)
+```
+
+
+
+Statistic test for alpha diversity
+
+Test whether the observed number of OTUs differs significantly between Treatment.
+
+This need singelton info to run richness analysis
+
+
+#Plot abundances
+
+## Normalize data 
+
+To plot the relative abundance, the data need to be normalized 
+
+Here, we used rarefication method to normalized the count 
+
+'rarefy_even_depth': Resample an OTU table such that all samples have the same library size
+
+
+```{r}
+physeq_ITS_V4 <- subset_samples(physeq_ITS, Stage=="V4-R1")
+
+
+rarefy_physeq_ITS_V4 <- rarefy_even_depth(physeq_ITS_V4, sample.size = min(sample_sums(physeq_ITS_V4)),
+                                       rngseed = 1, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+rarefy_physeq_ITS_V4 
+test <-refseq(rarefy_physeq_ITS_V4 )
+alignment <- AlignSeqs(DNAStringSet(test), anchor=NA) #Align A Set Of Unaligned Sequences
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA") #Conversion Among Sequence Formats
+phang.align
+dm <- dist.ml(phang.align) #Pairwise Distances From Sequences
+treeNJ <- NJ(dm) # Note, tip order != sequence order #Neighbor-Joining Tree Estimation
+treeNJ
+fit = pml(treeNJ, data=phang.align) # computes the likelihood of a phylogenetic tree given a sequence alignment and a model
+fitGTR <- update(fit, k=4, inv=0.2) #negative edges length changed to 0!
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+fitGTR$tree
+write.nexus(fitGTR$tree, file="rarefy_physeq_ITS_V4_tree")
+
+```
+
+```{r}
+physeq_ITS_R3 <- subset_samples(physeq_ITS, Stage=="R2-R3")
+
+
+rarefy_physeq_ITS_R3 <- rarefy_even_depth(physeq_ITS_R3, sample.size = min(sample_sums(physeq_ITS_R3)),
+                                       rngseed = 2, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+rarefy_physeq_ITS_R3 
+test <-refseq(rarefy_physeq_ITS_R3 )
+alignment <- AlignSeqs(DNAStringSet(test), anchor=NA) #Align A Set Of Unaligned Sequences
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA") #Conversion Among Sequence Formats
+phang.align
+dm <- dist.ml(phang.align) #Pairwise Distances From Sequences
+treeNJ <- NJ(dm) # Note, tip order != sequence order #Neighbor-Joining Tree Estimation
+treeNJ
+fit = pml(treeNJ, data=phang.align) # computes the likelihood of a phylogenetic tree given a sequence alignment and a model
+fitGTR <- update(fit, k=4, inv=0.2) #negative edges length changed to 0!
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+fitGTR$tree
+write.nexus(fitGTR$tree, file="rarefy_physeq_ITS_R3_tree")
+
+```
+
+
+```{r}
+physeq_ITS_R5 <- subset_samples(physeq_ITS, Stage=="R5")
+
+
+rarefy_physeq_ITS_R5 <- rarefy_even_depth(physeq_ITS_R5, sample.size = min(sample_sums(physeq_ITS_R5)),
+                                       rngseed = 3, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+rarefy_physeq_ITS_R5 
+test <-refseq(rarefy_physeq_ITS_R5 )
+alignment <- AlignSeqs(DNAStringSet(test), anchor=NA) #Align A Set Of Unaligned Sequences
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA") #Conversion Among Sequence Formats
+phang.align
+dm <- dist.ml(phang.align) #Pairwise Distances From Sequences
+treeNJ <- NJ(dm) # Note, tip order != sequence order #Neighbor-Joining Tree Estimation
+treeNJ
+fit = pml(treeNJ, data=phang.align) # computes the likelihood of a phylogenetic tree given a sequence alignment and a model
+fitGTR <- update(fit, k=4, inv=0.2) #negative edges length changed to 0!
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+fitGTR$tree
+write.nexus(fitGTR$tree, file="rarefy_physeq_ITS_R5_tree")
+
+```
+
+
+```{r}
+physeq_ITS_mergeOTU_V4 <- subset_samples(physeq_ITS_mergeOTU, Stage=="V4-R1")
+
+
+rarefy_physeq_ITS_mergeOTU_V4 <- rarefy_even_depth(physeq_ITS_mergeOTU_V4, sample.size = min(sample_sums(physeq_ITS_mergeOTU_V4)),
+                                       rngseed = 4, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+rarefy_physeq_ITS_mergeOTU_V4 
+test <-refseq(rarefy_physeq_ITS_mergeOTU_V4 )
+alignment <- AlignSeqs(DNAStringSet(test), anchor=NA) #Align A Set Of Unaligned Sequences
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA") #Conversion Among Sequence Formats
+phang.align
+dm <- dist.ml(phang.align) #Pairwise Distances From Sequences
+treeNJ <- NJ(dm) # Note, tip order != sequence order #Neighbor-Joining Tree Estimation
+treeNJ
+fit = pml(treeNJ, data=phang.align) # computes the likelihood of a phylogenetic tree given a sequence alignment and a model
+fitGTR <- update(fit, k=4, inv=0.2) #negative edges length changed to 0!
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+fitGTR$tree
+write.nexus(fitGTR$tree, file="rarefy_physeq_ITS_mergeOTU_V4_tree")
+
+```
+```{r}
+physeq_ITS_mergeOTU_R3 <- subset_samples(physeq_ITS_mergeOTU, Stage=="R2-R3")
+
+
+rarefy_physeq_ITS_mergeOTU_R3 <- rarefy_even_depth(physeq_ITS_mergeOTU_R3, sample.size = min(sample_sums(physeq_ITS_mergeOTU_R3)),
+                                       rngseed = 5, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+rarefy_physeq_ITS_mergeOTU_R3 
+test <-refseq(rarefy_physeq_ITS_mergeOTU_R3 )
+alignment <- AlignSeqs(DNAStringSet(test), anchor=NA) #Align A Set Of Unaligned Sequences
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA") #Conversion Among Sequence Formats
+phang.align
+dm <- dist.ml(phang.align) #Pairwise Distances From Sequences
+treeNJ <- NJ(dm) # Note, tip order != sequence order #Neighbor-Joining Tree Estimation
+treeNJ
+fit = pml(treeNJ, data=phang.align) # computes the likelihood of a phylogenetic tree given a sequence alignment and a model
+fitGTR <- update(fit, k=4, inv=0.2) #negative edges length changed to 0!
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+fitGTR$tree
+write.nexus(fitGTR$tree, file="rarefy_physeq_ITS_mergeOTU_R3_tree")
+
+```
+
+
+```{r}
+physeq_ITS_mergeOTU_R5 <- subset_samples(physeq_ITS_mergeOTU, Stage=="R5")
+
+
+rarefy_physeq_ITS_mergeOTU_R5 <- rarefy_even_depth(physeq_ITS_mergeOTU_R5, sample.size = min(sample_sums(physeq_ITS_mergeOTU_R5)),
+                                       rngseed = 6, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+rarefy_physeq_ITS_mergeOTU_R5 
+test <-refseq(rarefy_physeq_ITS_mergeOTU_R5 )
+alignment <- AlignSeqs(DNAStringSet(test), anchor=NA) #Align A Set Of Unaligned Sequences
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA") #Conversion Among Sequence Formats
+phang.align
+dm <- dist.ml(phang.align) #Pairwise Distances From Sequences
+treeNJ <- NJ(dm) # Note, tip order != sequence order #Neighbor-Joining Tree Estimation
+treeNJ
+fit = pml(treeNJ, data=phang.align) # computes the likelihood of a phylogenetic tree given a sequence alignment and a model
+fitGTR <- update(fit, k=4, inv=0.2) #negative edges length changed to 0!
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+fitGTR$tree
+write.nexus(fitGTR$tree, file="rarefy_physeq_ITS_mergeOTU_R5_tree")
+
+```
+
+```{r}
+tree_ITS_V4 <-read.nexus("rarefy_physeq_ITS_V4_tree")
+rarefy_physeq_ITS_V4 <- merge_phyloseq(rarefy_physeq_ITS_V4, tree_ITS_V4)
+
+tree_ITS_R3 <-read.nexus("rarefy_physeq_ITS_R3_tree")
+rarefy_physeq_ITS_R3 <- merge_phyloseq(rarefy_physeq_ITS_R3, tree_ITS_R3)
+
+tree_ITS_R5 <-read.nexus("rarefy_physeq_ITS_R5_tree")
+rarefy_physeq_ITS_R5 <- merge_phyloseq(rarefy_physeq_ITS_R5, tree_ITS_R5)
+
+tree_ITS_mergeOTU_V4 <-read.nexus("rarefy_physeq_ITS_mergeOTU_V4_tree")
+rarefy_physeq_ITS_mergeOTU_V4 <- merge_phyloseq(rarefy_physeq_ITS_mergeOTU_V4, tree_ITS_mergeOTU_V4)
+
+tree_ITS_mergeOTU_R3 <-read.nexus("rarefy_physeq_ITS_mergeOTU_R3_tree")
+rarefy_physeq_ITS_mergeOTU_R3 <- merge_phyloseq(rarefy_physeq_ITS_mergeOTU_R3, tree_ITS_mergeOTU_R3)
+
+tree_ITS_mergeOTU_R5 <-read.nexus("rarefy_physeq_ITS_mergeOTU_R5_tree")
+rarefy_physeq_ITS_mergeOTU_R5 <- merge_phyloseq(rarefy_physeq_ITS_mergeOTU_R5, tree_ITS_mergeOTU_R5)
+
+```
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4955027/pdf/f1000research-5-10545.pdf
+
+
+
+#Beta diversity analysis 
+
+```{r}
+#beta diversity #need to use normalized data
+# PCoA plot using the unweighted or weighted UniFrac as distance 
+#unifrac:
+#weighted:accounts for abundance of observed organisms, sensitive to rare taxa 
+#unweighted:only considers their presence or absence of the organisms
+set.seed(276)
+wunifrac_dist_ITS_V4 = phyloseq::distance(rarefy_physeq_ITS_V4, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_V4 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_V4)))
+
+unifrac_dist_ITS_V4 = phyloseq::distance(rarefy_physeq_ITS_V4, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_V4 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_V4)))
+
+
+
+wunifrac_dist_ITS_mergeOTU_V4 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_V4, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_mergeOTU_V4 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_V4)))
+
+unifrac_dist_ITS_mergeOTU_V4 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_V4, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_mergeOTU_V4 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_V4)))
+
+
+ordination = ordinate(rarefy_physeq_ITS_V4, method="PCoA", distance=wunifrac_dist_ITS_V4)
+plot_ordination(rarefy_physeq_ITS_V4, ordination, color="Seed", shape="Treat_Inoc", title="rarefy_physeq_ITS_V4_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+
+ordination = ordinate(rarefy_physeq_ITS_mergeOTU_V4, method="PCoA", distance=wunifrac_dist_ITS_mergeOTU_V4)
+plot_ordination(rarefy_physeq_ITS_mergeOTU_V4, ordination, color="Seed", shape="Treat_Inoc", title="rarefy_physeq_ITS_mergeOTU_V4_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+
+
+```
+
+```{r}
+set.seed(255)
+wunifrac_dist_ITS_R3 = phyloseq::distance(rarefy_physeq_ITS_R3, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_R3 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_R3)))
+
+unifrac_dist_ITS_R3 = phyloseq::distance(rarefy_physeq_ITS_R3, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_R3 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_R3)))
+
+
+
+wunifrac_dist_ITS_mergeOTU_R3 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_R3, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_mergeOTU_R3 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_R3)))
+
+unifrac_dist_ITS_mergeOTU_R3 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_R3, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_mergeOTU_R3 ~ Treat_Inoc*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_R3)))
+
+
+
+```
+
+
+
+```{r}
+set.seed(205)
+wunifrac_dist_ITS_R5 = phyloseq::distance(rarefy_physeq_ITS_R5, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_R5 ~ Treatment*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_R5)))
+
+unifrac_dist_ITS_R5 = phyloseq::distance(rarefy_physeq_ITS_R5, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_R5 ~ Treatment*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_R5)))
+
+
+
+wunifrac_dist_ITS_mergeOTU_R5 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_R5, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_mergeOTU_R5 ~ Treatment*Treat_F*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_R5)))
+
+unifrac_dist_ITS_mergeOTU_R5 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_R5, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_mergeOTU_R5 ~ Treatment*Treat_F*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_R5)))
+
+```
+
+
+
+
+```{r}
+set.seed(299)
+wunifrac_dist_ITS_R5 = phyloseq::distance(rarefy_physeq_ITS_R5, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_R5 ~ Treat_Inoc*Treat_F*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_R5)))
+
+unifrac_dist_ITS_R5 = phyloseq::distance(rarefy_physeq_ITS_R5, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_R5 ~ Treat_Inoc*Treat_F*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_R5)))
+
+
+
+wunifrac_dist_ITS_mergeOTU_R5 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_R5, method="unifrac", weighted=T)
+adonis(wunifrac_dist_ITS_mergeOTU_R5 ~ Treat_Inoc*Treat_F*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_R5)))
+
+unifrac_dist_ITS_mergeOTU_R5 = phyloseq::distance(rarefy_physeq_ITS_mergeOTU_R5, method="unifrac", weighted=F)
+adonis(unifrac_dist_ITS_mergeOTU_R5 ~ Treat_Inoc*Treat_F*Seed+(1:Rep), data=data.frame(sample_data(rarefy_physeq_ITS_mergeOTU_R5)))
+
+
+
+ordination = ordinate(rarefy_physeq_ITS_R5, method="PCoA", distance=wunifrac_dist_ITS_R5)
+plot_ordination(rarefy_physeq_ITS_R5, ordination, color="Seed", shape="Treat_F", title="rarefy_physeq_ITS_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+plot_ordination(rarefy_physeq_ITS_R5, ordination, color="Seed", shape="Treatment", title="rarefy_physeq_ITS_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+ordination = ordinate(rarefy_physeq_ITS_mergeOTU_R5, method="PCoA", distance=wunifrac_dist_ITS_mergeOTU_R5)
+plot_ordination(rarefy_physeq_ITS_mergeOTU_R5, ordination, color="Seed", shape="Treat_F", title="rarefy_physeq_ITS_mergeOTU_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+plot_ordination(rarefy_physeq_ITS_mergeOTU_R5, ordination, color="Seed", shape="Treatment", title="rarefy_physeq_ITS_mergeOTU_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+
+ordplot + stat_ellipse(type = "t") +
+  theme_bw()
+?stat_ellipse
+
+
+```
+
+
+
+```{r}
+theme_set(theme_bw())
+
+
+ordination_All_V4_wunifrac = ordinate(rarefy_physeq_ITS_V4, method="PCoA", distance=wunifrac_dist_ITS_V4)
+ordination_All_V4_wunifrac
+plot_ordination(rarefy_physeq_ITS_V4, ordination_All_V4_wunifrac, color="Seed", shape="Treat_Inoc", title="rarefy_physeq_ITS_V4_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+ordination_All_R5_wunifrac = ordinate(rarefy_physeq_ITS_R5, method="PCoA", distance=wunifrac_dist_ITS_R5)
+ordination_All_R5_wunifrac
+p <-plot_ordination(rarefy_physeq_ITS_R5, ordination_All_R5_wunifrac,  color="Seed", shape="Treatment", title="rarefy_physeq_ITS_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+p + guides(color = guide_legend(order = 1), shape = guide_legend(order = 2))
+
+
+
+ordination_Merged_V4_wunifrac = ordinate(rarefy_physeq_ITS_mergeOTU_V4, method="PCoA", distance=wunifrac_dist_ITS_mergeOTU_V4)
+ordination_Merged_V4_wunifrac
+plot_ordination(rarefy_physeq_ITS_mergeOTU_V4, ordination_Merged_V4_wunifrac, color="Seed", shape="Treat_Inoc", title="rarefy_physeq_ITS_mergeOTU_V4_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+ordination = ordinate(rarefy_physeq_ITS_mergeOTU_R5, method="PCoA", distance=wunifrac_dist_ITS_mergeOTU_R5)
+plot_ordination(rarefy_physeq_ITS_mergeOTU_R5, ordination, color="Seed", shape="Treat_F", label="Rep", title="rarefy_physeq_ITS_mergeOTU_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+plot_ordination(rarefy_physeq_ITS_mergeOTU_R5, ordination, color="Seed", shape="Treatment", title="rarefy_physeq_ITS_mergeOTU_R5_weighted_unifrac_PCoA") + theme(aspect.ratio=1) + geom_point(size = 3)
+
+
+
+```
+
+
+## Noralization: relative abundance
+Relative abundance and Filtering low-variance OTUs
+
+Suppose we wanted to use the variance of OTUs across samples as a condition for filtering. For example, to remove OTUs that do not change much across all (or most) samples. 
+
+Note that the value of the variance is highly-dependent on the sequencing effort of each sample (the total number of reads sequenced from a particular sample). 
+
+Thus, we must first transform the sample counts to relative abundance, which is shown in more detail in the next section. 
+
+The following code will create a version of the GP dataset in which the abundance values have been transformed to relative abundance within each sample, and then OTUs have been filtered to keep only those with variance greater than 0.00001 (assuming we wanted to pick an arbitrary threshold in this way).
+
+
+```{r}
+
+## calclate relative abundance and filtered low abundance taxa 
+T_physeq_ITS_mergeOTU <- transform_sample_counts(physeq_ITS_mergeOTU, function(x) x/sum(x))
+T_physeq_ITS_mergeOTU
+
+# Tf_physeq_ITS_mergeOTU_Trim <- filter_taxa(T_physeq_ITS_mergeOTU, function(x) var(x) > 1e-05, TRUE)
+# Tf_physeq_ITS_mergeOTU_Trim 
+
+
+
+## Merged the data by treatment
+
+T_physeq_ITS_mergeOTU_V4 <-subset_samples(T_physeq_ITS_mergeOTU, Stage=="V4-R1")
+T_physeq_ITS_mergeOTU_V4_W <-subset_samples(T_physeq_ITS_mergeOTU_V4, Seed=="Williams")
+T_physeq_ITS_mergeOTU_V4_W
+T_physeq_ITS_mergeOTU_V4_W <- merge_samples(T_physeq_ITS_mergeOTU_V4_W, "Treat_Inoc")
+sample_data(T_physeq_ITS_mergeOTU_V4_W)
+otu_table(T_physeq_ITS_mergeOTU_V4_W)
+
+OTU_V4_W= as(otu_table(T_physeq_ITS_mergeOTU_V4_W), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_V4_W = as.data.frame(OTU_V4_W)
+OTU_V4_W <-t(OTU_V4_W)
+OTU_V4_W
+colnames(OTU_V4_W) <- c("N01", "N02")
+OTU_V4_W
+
+#####
+T_physeq_ITS_mergeOTU_V4_LD12 <- subset_samples(T_physeq_ITS_mergeOTU_V4, Seed=="LD12-8677")
+T_physeq_ITS_mergeOTU_V4_LD12 <- merge_samples(T_physeq_ITS_mergeOTU_V4_LD12, "Treat_Inoc")
+
+OTU_V4_LD12= as(otu_table(T_physeq_ITS_mergeOTU_V4_LD12), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_V4_LD12 = as.data.frame(OTU_V4_LD12)
+OTU_V4_LD12 <-t(OTU_V4_LD12)
+OTU_V4_LD12
+colnames(OTU_V4_LD12) <- c("N03", "N04")
+OTU_V4_LD12
+
+
+#####
+T_physeq_ITS_mergeOTU_V4_LD13 <-subset_samples(T_physeq_ITS_mergeOTU_V4, Seed=="LD13-14071R2")
+T_physeq_ITS_mergeOTU_V4_LD13 <- merge_samples(T_physeq_ITS_mergeOTU_V4_LD13, "Treat_Inoc")
+
+OTU_V4_LD13= as(otu_table(T_physeq_ITS_mergeOTU_V4_LD13), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_V4_LD13 = as.data.frame(OTU_V4_LD13)
+OTU_V4_LD13 <-t(OTU_V4_LD13)
+OTU_V4_LD13
+colnames(OTU_V4_LD13) <- c("N05", "N06")
+OTU_V4_LD13
+
+
+###
+T_physeq_ITS_mergeOTU_R3 <-subset_samples(T_physeq_ITS_mergeOTU, Stage=="R2-R3")
+T_physeq_ITS_mergeOTU_R3_W <-subset_samples(T_physeq_ITS_mergeOTU_R3, Seed=="Williams")
+T_physeq_ITS_mergeOTU_R3_W <- merge_samples(T_physeq_ITS_mergeOTU_R3_W, "Treat_Inoc")
+OTU_R3_W= as(otu_table(T_physeq_ITS_mergeOTU_R3_W), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_R3_W = as.data.frame(OTU_R3_W)
+OTU_R3_W <-t(OTU_R3_W)
+OTU_R3_W
+colnames(OTU_R3_W) <- c("N07", "N08")
+OTU_R3_W
+
+
+
+T_physeq_ITS_mergeOTU_R3_LD12 <- subset_samples(T_physeq_ITS_mergeOTU_R3, Seed=="LD12-8677")
+T_physeq_ITS_mergeOTU_R3_LD12 <- merge_samples(T_physeq_ITS_mergeOTU_R3_LD12, "Treat_Inoc")
+OTU_R3_LD12= as(otu_table(T_physeq_ITS_mergeOTU_R3_LD12), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_R3_LD12 = as.data.frame(OTU_R3_LD12)
+OTU_R3_LD12 <-t(OTU_R3_LD12)
+OTU_R3_LD12
+colnames(OTU_R3_LD12) <- c("N09", "N10")
+OTU_R3_LD12
+
+
+
+
+T_physeq_ITS_mergeOTU_R3_LD13 <-subset_samples(T_physeq_ITS_mergeOTU_R3, Seed=="LD13-14071R2")
+T_physeq_ITS_mergeOTU_R3_LD13 <- merge_samples(T_physeq_ITS_mergeOTU_R3_LD13, "Treat_Inoc")
+OTU_R3_LD13= as(otu_table(T_physeq_ITS_mergeOTU_R3_LD13), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_R3_LD13 = as.data.frame(OTU_R3_LD13)
+OTU_R3_LD13 <-t(OTU_R3_LD13)
+OTU_R3_LD13
+colnames(OTU_R3_LD13) <- c("N11", "N12")
+OTU_R3_LD13
+
+
+###
+T_physeq_ITS_mergeOTU_R5 <-subset_samples(T_physeq_ITS_mergeOTU, Stage=="R5")
+
+T_physeq_ITS_mergeOTU_R5_W <-subset_samples(T_physeq_ITS_mergeOTU_R5, Seed=="Williams")
+T_physeq_ITS_mergeOTU_R5_W <- merge_samples(T_physeq_ITS_mergeOTU_R5_W, "Treatment")
+OTU_R5_W= as(otu_table(T_physeq_ITS_mergeOTU_R5_W), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_R5_W = as.data.frame(OTU_R5_W)
+OTU_R5_W <-t(OTU_R5_W)
+OTU_R5_W
+colnames(OTU_R5_W) <- c("N13", "N14", "N15", "N16")
+OTU_R5_W
+
+
+
+T_physeq_ITS_mergeOTU_R5_LD12 <- subset_samples(T_physeq_ITS_mergeOTU_R5, Seed=="LD12-8677")
+T_physeq_ITS_mergeOTU_R5_LD12 <- merge_samples(T_physeq_ITS_mergeOTU_R5_LD12, "Treatment")
+OTU_R5_LD12= as(otu_table(T_physeq_ITS_mergeOTU_R5_LD12), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_R5_LD12 = as.data.frame(OTU_R5_LD12)
+OTU_R5_LD12 <-t(OTU_R5_LD12)
+OTU_R5_LD12
+colnames(OTU_R5_LD12) <- c("N17", "N18", "N19", "N20")
+OTU_R5_LD12
+
+
+
+
+T_physeq_ITS_mergeOTU_R5_LD13 <-subset_samples(T_physeq_ITS_mergeOTU_R5, Seed=="LD13-14071R2")
+T_physeq_ITS_mergeOTU_R5_LD13 <- merge_samples(T_physeq_ITS_mergeOTU_R5_LD13, "Treatment")
+OTU_R5_LD13= as(otu_table(T_physeq_ITS_mergeOTU_R5_LD13), "matrix")  ##Extract abundance matrix from the phyloseq object
+OTU_R5_LD13 = as.data.frame(OTU_R5_LD13)
+OTU_R5_LD13 <-t(OTU_R5_LD13)
+OTU_R5_LD13
+colnames(OTU_R5_LD13) <- c("N21", "N22", "N23", "N24")
+OTU_R5_LD13
+
+
+
+OTU_V4_W <-otu_table(as.matrix(OTU_V4_W),taxa_are_rows=TRUE)
+OTU_V4_LD12 <-otu_table(as.matrix(OTU_V4_LD12),taxa_are_rows=TRUE)
+OTU_V4_LD13 <-otu_table(as.matrix(OTU_V4_LD13),taxa_are_rows=TRUE)
+OTU_R3_W <-otu_table(as.matrix(OTU_R3_W),taxa_are_rows=TRUE)
+OTU_R3_LD12 <-otu_table(as.matrix(OTU_R3_LD12),taxa_are_rows=TRUE)
+OTU_R3_LD13 <-otu_table(as.matrix(OTU_R3_LD13),taxa_are_rows=TRUE)
+OTU_R5_W <-otu_table(as.matrix(OTU_R5_W),taxa_are_rows=TRUE)
+OTU_R5_LD12 <-otu_table(as.matrix(OTU_R5_LD12),taxa_are_rows=TRUE)
+OTU_R5_LD13 <-otu_table(as.matrix(OTU_R5_LD13),taxa_are_rows=TRUE)
+
+
+physeq_relative_abundance <-merge_phyloseq(OTU_V4_W, OTU_V4_LD12, OTU_V4_LD13, OTU_R3_W, OTU_R3_LD12, OTU_R3_LD13, OTU_R5_W, OTU_R5_LD12, OTU_R5_LD13,Samplemetadata_Merged, featuretable)
+
+physeq_relative_abundance
+physeq_relative_abundance_2 <- transform_sample_counts(physeq_relative_abundance, function(x) x / sum(x))
+
+#############################################
+
+
+
+top20_V4 <- subset_samples(physeq_relative_abundance_2, Stage=="V4-R1")
+top20_R3 <- subset_samples(physeq_relative_abundance_2, Stage=="R2-R3")
+top20_R5 <- subset_samples(physeq_relative_abundance_2, Stage=="R5")
+
+####
+level_order_V4 <- c('V4_W_Inoc', 'V4_W_NIC', 'V4_LD12_Inoc', 'V4_LD12_NIC', 'V4_LD13_Inoc', 'V4_LD13_NIC') #this vector might be useful for other plots/analyses
+
+top20otus_V4 = names(sort(taxa_sums(top20_V4), TRUE)[1:20])
+
+taxtab20_V4 = cbind(tax_table(top20_V4), Genus20 = NA)
+taxtab20_V4[top20otus_V4, "Genus20"] <- as(tax_table(top20_V4)[top20otus_V4, "Genus"], "character")
+
+tax_table(top20_V4) <- tax_table(taxtab20_V4)
+ 
+p <- plot_bar(top20_V4, "FigureName", fill = "Genus20") + ylab("Relative Abundance") + xlab ("Treatment") + theme(axis.text.x = element_text(angle = 90)) + labs(fill = "Genus") 
+
+p$data$FigureName<- as.character(p$data$FigureName)
+p$data$FigureName <- factor(p$data$FigureName, levels=level_order_V4)
+print(p)
+
+
+#####
+level_order_R3 <- c('R3_W_Inoc', 'R3_W_NIC', 'R3_LD12_Inoc', 'R3_LD12_NIC', 'R3_LD13_Inoc', 'R3_LD13_NIC')
+
+top20otus_R3 = names(sort(taxa_sums(top20_R3), TRUE)[1:20])
+
+taxtab20_R3 = cbind(tax_table(top20_R3), Genus20 = NA)
+taxtab20_R3[top20otus_R3, "Genus20"] <- as(tax_table(top20_R3)[top20otus_R3, "Genus"], "character")
+
+tax_table(top20_R3) <- tax_table(taxtab20_R3)
+
+p <- plot_bar(top20_R3, "FigureName", fill = "Genus20") + ylab("Relative Abundance") + xlab ("Treatment") + theme(axis.text.x = element_text(angle = 90)) + labs(fill = "Genus")
+
+p$data$FigureName<- as.character(p$data$FigureName)
+p$data$FigureName <- factor(p$data$FigureName, levels=level_order_R3)
+print(p)
+
+
+######
+level_order_R5 <- c('R5_W_Inoc/no', 'R5_W_Inoc/yes', 'R5_W_NIC/no', 'R5_W_NIC/yes', 'R5_LD12_Inoc/no', 'R5_LD12_Inoc/yes', 'R5_LD12_NIC/no', 'R5_LD12_NIC/yes', 'R5_LD13_Inoc/no', 'R5_LD13_Inoc/yes', 'R5_LD13_NIC/no', 'R5_LD13_NIC/yes')
+
+top20otus_R5 = names(sort(taxa_sums(top20_R5), TRUE)[1:20])
+
+taxtab20_R5 = cbind(tax_table(top20_R5), Genus20 = NA)
+taxtab20_R5[top20otus_R5, "Genus20"] <- as(tax_table(top20_R5)[top20otus_R5, "Genus"], "character")
+
+tax_table(top20_R5) <- tax_table(taxtab20_R5)
+
+p <- plot_bar(top20_R5, "FigureName", fill = "Genus20") + ylab("Relative Abundance") + xlab ("Treatment") + theme(axis.text.x = element_text(angle = 90)) + labs(fill = "Genus")
+p$data$FigureName<- as.character(p$data$FigureName)
+p$data$FigureName <- factor(p$data$FigureName, levels=level_order_R5)
+print(p)
+
+
+```
+
+Core microbiome (https://microbiome.github.io/tutorials/Core.html)
+
+```{r}
+# All samples
+core_2 <- core_members(physeq_relative_abundance_2, detection = 1/100, prevalence = 50/100, include.lowest = TRUE)
+taxonomy2 <- as.data.frame(tax_table(physeq_relative_abundance_2))
+core_taxa_id_2 <- subset(taxonomy2, rownames(taxonomy2) %in% core_2)
+DT::datatable(core_taxa_id_2)
+core.abundance_2 <- sample_sums(core(physeq_relative_abundance_2, detection = 1/100, prevalence = 50/100, include.lowest = TRUE))
+DT::datatable(as.data.frame(core.abundance_2))
+
+
+#Sample: Not_Inoc/no fungicide 
+
+physeq_relative_abundance_2_sub <-subset_samples(physeq_relative_abundance_2, Treat_Inoc=="not_inoc") 
+physeq_relative_abundance_2_sub <- subset_samples(physeq_relative_abundance_2_sub , Treat_F_2=="no") 
+sample_data(physeq_relative_abundance_2_sub) 
+core_3 <- core_members(physeq_relative_abundance_2_sub , detection = 1/100, prevalence = 50/100, include.lowest = TRUE)
+taxonomy3 <- as.data.frame(tax_table(physeq_relative_abundance_2_sub ))
+core_taxa_id_3 <- subset(taxonomy3, rownames(taxonomy3) %in% core_3)
+DT::datatable(core_taxa_id_3)
+core.abundance_3 <- sample_sums(core(physeq_relative_abundance_2_sub , detection = 1/100, prevalence = 50/100, include.lowest = TRUE))
+DT::datatable(as.data.frame(core.abundance_3))
+
+
+```
+
+
+
+
+```{r}
+#OTU differential abundance testing with DESeq2
+#recommend having 5 samples in each category
+#input data should not be normalized and raefied
+## V4_W  Inoc vs NIC
+
+physeq_ITS_mergeOTU_V4_W <- subset_samples(physeq_ITS_mergeOTU_V4, Seed=="Williams")
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_V4_W, ~ Treat_Inoc)
+ds
+
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treat_Inoc", "Inoc", "not_inoc"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_V4_W)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+```{r}
+#OTU differential abundance testing with DESeq2
+# V4 Inoc vs NIC 
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_V4, ~ Treat_Inoc)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treat_Inoc", "Inoc", "not_inoc"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_V4)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+
+
+```{r}
+#OTU differential abundance testing with DESeq2
+## R5 Inoc/yes vs Inoc/no
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_R5, ~ Treatment+Seed)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treatment", "Inoc/yes", "Inoc/no"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_R5)[rownames(res_sig), ], "matrix"))
+sigtab
+
+```
+
+
+```{r}
+#OTU differential abundance testing with DESeq2
+## R5
+##    Inoc/yes vs Not_inoc/no
+
+
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_R5, ~ Treatment+Seed)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treatment", "Inoc/yes", "not_inoc/no"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_R5)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+
+```{r}
+#OTU differential abundance testing with DESeq2
+## R5 
+##    
+##    Inoc/yes vs Not_inoc/yes 
+
+
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_R5, ~ Treatment+Seed)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treatment", "Inoc/yes", "not_inoc/yes"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_R5)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+```{r}
+#OTU differential abundance testing with DESeq2
+## R5 
+##    
+##    
+##    Inoc/no vs Not_inoc/no 
+
+
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_R5, ~ Treatment+Seed)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treatment", "Inoc/no", "not_inoc/no"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_R5)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+```{r}
+#OTU differential abundance testing with DESeq2
+## R5 
+##   
+##    
+##   
+##    Inoc/no vs Not_inoc/yes 
+
+
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_R5, ~ Treatment+Seed)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treatment", "Inoc/no", "not_inoc/yes"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_R5)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+
+```{r}
+#OTU differential abundance testing with DESeq2
+## R5 
+##   
+##    
+##   
+##  
+##    Not_inoc/no vs Not_inoc/yes 
+
+
+ds = phyloseq_to_deseq2(physeq_ITS_mergeOTU_R5, ~ Treatment+Seed)
+ds
+
+#Run deseq test 
+ds = DESeq(ds)
+ds
+# Investigate results
+deseq.results <- as.data.frame(results(ds))
+deseq.results
+deseq.results$taxon <- rownames(results(ds))
+alpha = 0.05
+res = results(ds, contrast=c("Treatment", "not_inoc/no", "not_inoc/yes"), alpha=alpha)
+res = res[order(res$pvalue, na.last=NA), ]
+res_sig = res[(res$pvalue < alpha), ]
+
+sigtab = cbind(as(res_sig, "data.frame"), as(tax_table(physeq_ITS_mergeOTU_R5)[rownames(res_sig), ], "matrix"))
+head(sigtab)
+sigtab
+
+```
+
+
+OTU differential test plot
+
+````{r}
+theme_set(theme_bw())
+level_order <- c('Inoc/yes vs Inoc/no', 'Inoc/yes vs NIC/no', 'Inoc/no vs NIC/no', 'Inoc/no vs NIC/yes', 'NIC/no vs NIC/yes ') 
+
+p <- ggplot(OTU_diff_plot_input_R5, aes(x=OTU, y=log2FoldChange, fill=Fill)) +  geom_bar(stat = "identity", position = "identity") + geom_hline(yintercept = 0)+coord_flip()+facet_grid(~Compare, scale="free_y", space='free_x')+theme(panel.spacing = unit(1, "lines"))
+
+p$data$Compare <- as.character(p$data$Compare)
+p$data$Compare <- factor(p$data$Compare, levels=level_order)
+p + theme(legend.position = "none")
+print(p)
+
+
+
+ggsave(p, file="OTU_differential_test_stage.tiff", width=4, height=4)
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+Network analysis
+https://briatte.github.io/ggnet/#installation
+https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/inference-of-microbial-ecological-networks.html
+https://link.springer.com/protocol/10.1007/978-1-4939-8728-3_16
+
+
+````{r}
+##Sample: W_Inoc 
+physeq_mergeOTU
+physeq_mergeOTU_Inoc <-subset_samples(physeq_mergeOTU, Treat_Inoc=="Inoc")
+physeq_mergeOTU_Inoc_W <-subset_samples(physeq_mergeOTU_Inoc, Seed=="Williams")
+physeq_mergeOTU_Inoc_W 
+
+# Add taxonomic classification to OTU ID
+physeq_mergeOTU_Inoc_W.f <- microbiomeutilities::format_to_besthit(physeq_mergeOTU_Inoc_W)
+
+otu.c <- t(otu_table(physeq_mergeOTU_Inoc_W.f)) #extract the otu table from phyloseq object
+tax.c <- as.data.frame(tax_table(physeq_mergeOTU_Inoc_W.f))#extract the taxonomy information
+
+set.seed(6073)
+
+#run the whole SPIEC-EASI pipeline, from data transformation, sparse inverse covariance estimation and model selection. Inputs are a non-normalized OTU table and pipeline options
+
+net.c <- spiec.easi(otu.c, method='mb', lambda.min.ratio = 1e-2, nlambda = 20, icov.select.params=list(rep.num=5))
+
+#Symmetrize a beta (coefficient) matrix, ie. selected from MB neighborhood selection
+n.c <- symBeta(getOptBeta(net.c))
+
+##Add names to IDs
+colnames(n.c) <- rownames(n.c) <- colnames(otu.c)
+vsize <- log2(apply(otu.c, 2, mean)) # add log abundance as properties of vertex/nodes.
+
+
+##Prepare data for plotting
+Inoc.ig <- graph.adjacency(n.c, mode='undirected', add.rownames = TRUE, weighted = TRUE)
+Inoc.ig # we can see all the attributes and weights
+plot(Inoc.ig)
+coords.fdr = layout_with_fr(Inoc.ig)  #place vertices on the plane using the force-directed layout algorithm by Fruchterman and Reingold.
+coords.fdr
+
+##igraph network
+
+E(Inoc.ig)[weight > 0]$color<-"steelblue" #now color the edges based on their values positive is steelblue
+E(Inoc.ig)[weight < 0]$color<-"orange"  #now color the edges based on their values
+
+Inoc.net <- asNetwork(Inoc.ig)  #Covert objects to class "network"
+
+network::set.edge.attribute(Inoc.net, "color", ifelse(Inoc.net %e% "weight" > 0, "steelblue", "orange"))
+
+#####
+
+phyla <- map_levels(colnames(otu.c), from = "best_hit", to = "Genus", tax_table(physeq_mergeOTU_Inoc.f))
+phyla
+Inoc.net %v% "Genus" <- phyla
+Inoc.net %v% "nodesize" <- vsize
+
+
+mycolors <- scale_color_manual(values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#ffff99","#b15928"))
+
+p <- ggnet2(Inoc.net, node.color = "Genus", 
+            label = TRUE, node.size = "nodesize", 
+            label.size = 2, edge.color = "color") + guides(color=guide_legend(title="Phylum"), size = FALSE)
+
+p 
+
+Inoc.mb <- degree.distribution(Inoc.ig)
+plot(0:(length(stl.mb)-1), stl.mb, ylim=c(0,.15), type='b', 
+      ylab="Frequency", xlab="Degree", main="Degree Distributions")
+
+
+# we will look at only taxa connect more than 10 others
+p2 <- ggnet2(Inoc.net, node.color = "Genus", 
+            label = TRUE, 
+            label.size = 3, edge.color = "color",
+            size = "degree", size.min = 22, size.max=23) + guides(color=guide_legend(title="Genus"), size = FALSE) 
+p2
+
+```
+
+
+Compare the relative abundace of Septoria glycines
+
+````{r}
+physeq_mergeOTU
+
+
+df1 <- psmelt(physeq_mergeOTU)
+
+Sg_rawcount <- df1 %>%
+    group_by(Sample, Genus) %>%
+    summarize(Mean = mean(Abundance)) %>%
+    arrange(-Mean)
+Sg_rawcount
+write.csv(Sg_rawcount, file="Sg_rawcount")
+
+write.csv(otu_table(physeq_mergeOTU), file="physeq_merge")
+
+
+
+ps2 <- transform_sample_counts(physeq_mergeOTU, function(x) x / sum(x))
+ps2
+
+
+df <- psmelt(ps2)
+df
+top_phyla <- df %>%
+    group_by(Sample, Genus) %>%
+    summarize(Mean = mean(Abundance)) %>%
+    arrange(-Mean)
+write.csv(top_phyla, file="top_phyla")
+?write.csv
+
+
+```
